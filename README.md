@@ -4,7 +4,7 @@ This is a custom implementation of the *DataSource.Connection* interface to crea
 
 For more details:
 
-https://developer.salesforce.com/blogs/engineering/2015/05/introducing-lightning-connect-custom-adapters.html
+https://developer.salesforce.com/blogs/engineering/2015/05/lightning-connect-custom-adapters-and-mongodb.html
 
 
 Author: Enrico Murru (http://enree.co)
