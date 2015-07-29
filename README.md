@@ -1,6 +1,6 @@
 # Salesforce Lighnint Connect to MongoDB connector
 
-This is a custom implementation of the *DataSource.Connection* interface to create a custom External Data Source provider to connect Salesforce with a custom MongoDB database.
+This is a custom implementation of the *DataSource.Connection* interface to create a custom External Data Source provider to connect Salesforce with a custom MongoDB database REST proxy.
 
 For more details:
 
