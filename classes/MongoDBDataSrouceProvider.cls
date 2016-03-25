@@ -8,6 +8,10 @@ global class MongoDBDataSrouceProvider extends DataSource.Provider {
           List<DataSource.Capability> capabilities = new List<DataSource.Capability>();
           capabilities.add(DataSource.Capability.ROW_QUERY);
           capabilities.add(DataSource.Capability.SEARCH);
+          capabilities.add(DataSource.Capability.ROW_CREATE);
+          capabilities.add(DataSource.Capability.ROW_UPDATE);
+          capabilities.add(DataSource.Capability.ROW_DELETE);
+          
           return capabilities;
       }
       override global DataSource.Connection getConnection(DataSource.ConnectionParams connectionParams) {

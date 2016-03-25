@@ -12,7 +12,7 @@ global class MongoDBDataSourceConnection extends DataSource.Connection {
     }
     
     private static Map<String,String> FIELD_MAP = new Map<String,String>{
-        	'Id' => '_id',
+            'Id' => '_id',
             'ExternalId' => '_id',
             'DisplayUrl' => '_id',
             'Account' => 'accountid',
@@ -54,6 +54,82 @@ global class MongoDBDataSourceConnection extends DataSource.Connection {
     override global List<DataSource.TableResult> search(DataSource.SearchContext c) {        
         return DataSource.SearchUtils.searchByName(c, this);
     }
+    
+
+    global override List<DataSource.UpsertResult> upsertRows(DataSource.UpsertContext context) {
+        List<DataSource.UpsertResult> results = new List<DataSource.UpsertResult>();
+        List<Map<String, Object>> rows = context.rows;
+        Http h = new Http();
+        
+        for(Integer i = 0; i < rows.size(); i++){
+            Map<String,Object> row = rows[i];
+            HttpRequest request = new HttpRequest();
+            request.setHeader('Content-Type','application/json');
+            request.setTimeout(60000);
+            //throwException(''+row);
+            Map<String,Object> invoice = new Map<String,Object>();
+            if(String.isBlank((String)row.get('ExternalId'))){
+                request.setMethod('POST');
+                request.setEndpoint(DB_ENDPOINT_NC);
+            }else{
+                //invoice.put('_id', row.get('ExternalId'));
+                request.setMethod('PUT');
+                request.setEndpoint(DB_ENDPOINT_NC+'/'+row.get('ExternalId'));
+            }
+            
+            invoice.put('accountid', row.get('Account'));
+            invoice.put('contractid', row.get('Contract'));
+            invoice.put('created', row.get('CreatedDate'));
+            invoice.put('amount', row.get('Amount'));
+            invoice.put('description', row.get('Description'));
+            
+            request.setBody(JSON.serialize(invoice));
+            
+            HttpResponse response = h.send(request);
+            
+            List<Object> mList = (List<Object>)JSON.deserializeUntyped(response.getBody());
+            Map<String, Object> m = (Map<String, Object>)mList[0];
+            if (response.getStatusCode() == 200){
+                String objId = String.valueOf(m.get('_id'));
+                if(String.isBlank(objId)){
+                    objId = String.valueOf(row.get('ExternalId'));
+                }
+                results.add(DataSource.UpsertResult.success(objId));
+            } 
+            else {
+                results.add(DataSource.UpsertResult.failure(
+                    String.valueOf(row.get('ExternalId')), 'The callout resulted in an error: ' + response.getStatusCode()+' - '+response.getBody()));
+            }
+        }
+        return results;
+    }
+    
+    global override List<DataSource.DeleteResult> deleteRows(DataSource.DeleteContext context) {
+       List<DataSource.DeleteResult> results = new List<DataSource.DeleteResult>();
+        Http h = new Http();
+        
+        for (String externalId : context.externalIds){
+            HttpRequest request = new HttpRequest();
+            request.setHeader('Content-Type','application/json');
+            request.setTimeout(60000);
+
+            request.setMethod('DELETE');
+            request.setEndpoint(DB_ENDPOINT_NC+'/'+externalId);
+            
+            HttpResponse response = h.send(request);
+            //Map<String, Object> m = (Map<String, Object>)JSON.deserializeUntyped(response.getBody());
+            if (response.getStatusCode() == 200
+                || response.getStatusCode() == 201){
+                results.add(DataSource.DeleteResult.success(String.valueOf(externalId)));
+            } 
+            else {
+                results.add(DataSource.DeleteResult.failure(
+                    String.valueOf(externalId), 'The callout resulted in an error: ' + response.getStatusCode()+' - '+response.getBody()));
+            }
+        }
+       return results;
+    }
+
     
     private List<Map<String,Object>> execQuery(string soqlQuery) {
         List<Map<String,Object>> rows = new List<Map<String,Object>>();
@@ -111,14 +187,14 @@ global class MongoDBDataSourceConnection extends DataSource.Connection {
         }
         return baseQuery;
     }
-	
-	private string getSoqlFields(List<DataSource.ColumnSelection> fieldsList) {
+    
+    private string getSoqlFields(List<DataSource.ColumnSelection> fieldsList) {
         if(fieldsList == null || fieldsList.size()==0) return null;
         List<String> sorts = new List<String>();
         Set<String> objFields = new Set<String>(FIELD_MAP.values());
         Map<String,Integer> fieldSelection = new Map<String,Integer>();
         for(DataSource.ColumnSelection cs : fieldsList){
-			fieldSelection.put(FIELD_MAP.get(cs.columnName), 1);
+            fieldSelection.put(FIELD_MAP.get(cs.columnName), 1);
         } 
         return (fieldSelection.isEmpty())?null:JSON.serialize(fieldSelection);
     }
@@ -177,11 +253,11 @@ global class MongoDBDataSourceConnection extends DataSource.Connection {
             op = '{"$ne":'+wrappedValue+'}';
         } else if (filter.type == DataSource.FilterType.LESS_THAN) {    
             op = '{"$lt":'+wrappedValue+'}';
-        } else if (filter.type == DataSource.FilterType.GREATER_THAN) {           	  
+        } else if (filter.type == DataSource.FilterType.GREATER_THAN) {               
             op =  '{"$gt":'+wrappedValue+'}';
         } else if (filter.type == DataSource.FilterType.LESS_THAN_OR_EQUAL_TO) {      
             op = '{"$lte":'+wrappedValue+'}';
-        } else if (filter.type == DataSource.FilterType.GREATER_THAN_OR_EQUAL_TO) {           	 
+        } else if (filter.type == DataSource.FilterType.GREATER_THAN_OR_EQUAL_TO) {              
             op = '{"$gte":'+wrappedValue+'}';
         } else if (filter.type == DataSource.FilterType.STARTS_WITH) {
             op = '{"$regex":"^'+String.valueOf(expectedValue)+'"}';
@@ -193,7 +269,7 @@ global class MongoDBDataSourceConnection extends DataSource.Connection {
             op = '{"$regex":"'+String.valueOf(expectedValue).replace('%','.*')+'"}';
         }else {
             throwException('Implementing other filter types is left as an exercise for the reader: ' + filter.type);
-        }	
+        }   
         return '{"'+mapColumnName(columnName) + '":' + op+'}';
     }
     
