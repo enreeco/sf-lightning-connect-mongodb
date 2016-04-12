@@ -66,13 +66,12 @@ global class MongoDBDataSourceConnection extends DataSource.Connection {
             HttpRequest request = new HttpRequest();
             request.setHeader('Content-Type','application/json');
             request.setTimeout(60000);
-            //throwException(''+row);
+
             Map<String,Object> invoice = new Map<String,Object>();
             if(String.isBlank((String)row.get('ExternalId'))){
                 request.setMethod('POST');
                 request.setEndpoint(DB_ENDPOINT_NC);
             }else{
-                //invoice.put('_id', row.get('ExternalId'));
                 request.setMethod('PUT');
                 request.setEndpoint(DB_ENDPOINT_NC+'/'+row.get('ExternalId'));
             }
@@ -117,7 +116,7 @@ global class MongoDBDataSourceConnection extends DataSource.Connection {
             request.setEndpoint(DB_ENDPOINT_NC+'/'+externalId);
             
             HttpResponse response = h.send(request);
-            //Map<String, Object> m = (Map<String, Object>)JSON.deserializeUntyped(response.getBody());
+
             if (response.getStatusCode() == 200
                 || response.getStatusCode() == 201){
                 results.add(DataSource.DeleteResult.success(String.valueOf(externalId)));
